@@ -307,9 +307,9 @@ stage.addEventListener('wheel', e => {
   zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.004));
 }, { passive: false });
 
-// ---------- keyboard: arrow keys pan ----------
+// ---------- keyboard: WASD / arrows pan, Q / E zoom ----------
 
-const MOVE_KEYS = new Set(['arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
+const MOVE_KEYS = new Set(['w', 'a', 's', 'd', 'q', 'e', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
 const held = new Set();
 let lastFrame = 0;
 
@@ -318,10 +318,12 @@ function frame(now) {
   const dt = Math.min(0.05, lastFrame ? (now - lastFrame) / 1000 : 0.016);
   lastFrame = now;
   const step = 800 * dt;
-  if (held.has('arrowup')) view.y += step;
-  if (held.has('arrowdown')) view.y -= step;
-  if (held.has('arrowleft')) view.x += step;
-  if (held.has('arrowright')) view.x -= step;
+  if (held.has('w') || held.has('arrowup')) view.y += step;
+  if (held.has('s') || held.has('arrowdown')) view.y -= step;
+  if (held.has('a') || held.has('arrowleft')) view.x += step;
+  if (held.has('d') || held.has('arrowright')) view.x -= step;
+  const zoom = (held.has('e') ? 1 : 0) - (held.has('q') ? 1 : 0);
+  if (zoom) zoomAt(innerWidth / 2, innerHeight / 2, Math.exp(zoom * 1.6 * dt));
   applyView();
   requestAnimationFrame(frame);
 }
@@ -464,7 +466,7 @@ function initEditor() {
 
 document.getElementById('hint').innerHTML = EDIT
   ? 'Edit mode — drag to move, click selected text again to type, drag the blue dot to resize, drag the dot above a picture to rotate it. Changes are a draft in this browser until you download content.json and publish it.'
-  : 'drag or arrow keys to move · scroll to zoom · click a paper ball to unravel it · drag papers around';
+  : '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · <kbd>Q</kbd><kbd>E</kbd> or scroll to zoom · click a paper ball to unravel it · drag papers around';
 
 load().then(loaded => {
   doc = loaded;
