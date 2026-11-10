@@ -246,7 +246,7 @@ function click(item, target) {
 
 stage.addEventListener('wheel', e => {
   e.preventDefault();
-  zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.0015));
+  zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.004));
 }, { passive: false });
 
 // ---------- keyboard: arrow keys pan ----------
