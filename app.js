@@ -214,7 +214,8 @@ stage.addEventListener('pointerdown', e => {
   gesture = {
     mode, item, el, target: t, id: e.pointerId,
     sx: e.clientX, sy: e.clientY,
-    ox: item ? item.x : view.x, oy: item ? item.y : view.y,
+    // a drag that starts on an item visitors can't move still pans the camera
+    ox: mode === 'pan' ? view.x : item.x, oy: mode === 'pan' ? view.y : item.y,
     moved: false,
   };
   stage.setPointerCapture(e.pointerId);
