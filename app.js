@@ -145,6 +145,7 @@ function build(item) {
 
   if (EDIT && item.type !== 'text' && item.type !== 'paper') {
     el.insertAdjacentHTML('beforeend', '<div class="handle"></div>');
+    if (item.type === 'image') el.insertAdjacentHTML('beforeend', '<div class="handle rotate"></div>');
   }
   els.set(item.id, el);
   world.appendChild(el);
@@ -208,7 +209,8 @@ stage.addEventListener('pointerdown', e => {
   const el = t.closest('.item');
   const item = el && byId(el.dataset.id);
   let mode = 'pan';
-  if (item && t.closest('.handle')) mode = 'resize';
+  if (item && t.closest('.rotate')) mode = 'rotate';
+  else if (item && t.closest('.handle')) mode = 'resize';
   else if (item && (EDIT || item.type === 'paper')) mode = 'move';
 
   gesture = {
@@ -218,6 +220,13 @@ stage.addEventListener('pointerdown', e => {
     ox: mode === 'pan' ? view.x : item.x, oy: mode === 'pan' ? view.y : item.y,
     moved: false,
   };
+  if (item && item.type === 'image') {
+    // pictures turn about their centre, which is also the centre of their bounding box
+    const box = el.getBoundingClientRect();
+    gesture.cx = box.left + box.width / 2;
+    gesture.cy = box.top + box.height / 2;
+    gesture.w0 = item.w;
+  }
   stage.setPointerCapture(e.pointerId);
   e.preventDefault();
 });
@@ -243,6 +252,12 @@ stage.addEventListener('pointermove', e => {
     g.item.x = Math.round(g.ox + dx / view.k);
     g.item.y = Math.round(g.oy + dy / view.k);
     place(g.item);
+  } else if (g.mode === 'rotate') {
+    // the handle sits straight above the centre, hence the 90° offset; Shift snaps to 15° steps
+    let deg = Math.atan2(e.clientY - g.cy, e.clientX - g.cx) * 180 / Math.PI + 90;
+    if (e.shiftKey) deg = Math.round(deg / 15) * 15;
+    g.item.rot = +(((deg + 180) % 360 + 360) % 360 - 180).toFixed(1);
+    place(g.item);
   } else {
     const p = toWorld(e.clientX, e.clientY);
     const it = g.item;
@@ -250,7 +265,9 @@ stage.addEventListener('pointermove', e => {
       it.len = Math.max(30, Math.round(Math.hypot(p.x - it.x, p.y - it.y)));
       it.angle = +Math.atan2(p.y - it.y, p.x - it.x).toFixed(3);
     } else if (it.type === 'image') {
-      it.w = Math.max(80, Math.round(p.x - it.x));   // height follows the photo
+      // grow along the picture's own (rotated) horizontal axis; height follows the photo
+      const a = (it.rot || 0) * Math.PI / 180;
+      it.w = Math.max(80, Math.round(g.w0 + (dx * Math.cos(a) + dy * Math.sin(a)) / view.k));
     } else {
       it.w = Math.max(30, Math.round(p.x - it.x));
       it.h = Math.max(30, Math.round(p.y - it.y));
@@ -446,7 +463,7 @@ function initEditor() {
 // ---------- start ----------
 
 document.getElementById('hint').innerHTML = EDIT
-  ? 'Edit mode — drag to move, click selected text again to type, drag the blue dot to resize. Changes are a draft in this browser until you download content.json and publish it.'
+  ? 'Edit mode — drag to move, click selected text again to type, drag the blue dot to resize, drag the dot above a picture to rotate it. Changes are a draft in this browser until you download content.json and publish it.'
   : 'drag or arrow keys to move · scroll to zoom · click a paper ball to unravel it · drag papers around';
 
 load().then(loaded => {
