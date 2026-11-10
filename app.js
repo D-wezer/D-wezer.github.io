@@ -39,7 +39,27 @@ async function load() {
 
 function save() {
   if (!EDIT) return;
-  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(doc)); } catch {}
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(doc));
+  } catch {
+    // pictures are stored inside the draft, so enough of them can fill the browser's quota
+    document.getElementById('hint').textContent =
+      'The draft is now too big to save in this browser. Download content.json now so you don\'t lose your changes.';
+  }
+}
+
+// Shrinks a picked photo and returns it as a JPEG data URL, so it can live inside content.json.
+async function fileToDataURL(file, max = 1000) {
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bmp.width * scale);
+  canvas.height = Math.round(bmp.height * scale);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';   // JPEG has no transparency
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', 0.82);
 }
 
 // ---------- camera ----------
@@ -107,6 +127,20 @@ function build(item) {
       body.addEventListener('input', () => { item.body = body.innerHTML; save(); });
       for (const field of [title, body]) field.addEventListener('paste', pastePlain);
     }
+  } else if (item.type === 'image') {
+    el.innerHTML = '<img draggable="false"><div class="caption" data-placeholder="caption"></div>';
+    const img = el.querySelector('img');
+    const caption = el.querySelector('.caption');
+    img.src = item.src;   // a data URL, or a path / URL to an image file
+    img.alt = caption.textContent = item.caption || '';
+    if (EDIT) {
+      caption.contentEditable = 'true';
+      caption.addEventListener('input', () => {
+        item.caption = img.alt = caption.textContent;
+        save();
+      });
+      caption.addEventListener('paste', pastePlain);
+    }
   }
 
   if (EDIT && item.type !== 'text' && item.type !== 'paper') {
@@ -130,6 +164,10 @@ function place(item) {
   if (item.type === 'arrow') {
     el.style.width = item.len + 'px';
     el.style.transform = `rotate(${item.angle}rad)`;
+  }
+  if (item.type === 'image') {
+    el.style.width = item.w + 'px';
+    el.style.transform = `rotate(${item.rot || 0}deg)`;
   }
 }
 
@@ -210,6 +248,8 @@ stage.addEventListener('pointermove', e => {
     if (it.type === 'arrow') {
       it.len = Math.max(30, Math.round(Math.hypot(p.x - it.x, p.y - it.y)));
       it.angle = +Math.atan2(p.y - it.y, p.x - it.x).toFixed(3);
+    } else if (it.type === 'image') {
+      it.w = Math.max(80, Math.round(p.x - it.x));   // height follows the photo
     } else {
       it.w = Math.max(30, Math.round(p.x - it.x));
       it.h = Math.max(30, Math.round(p.y - it.y));
@@ -311,7 +351,7 @@ function removeSelected() {
   save();
 }
 
-function addItem(type) {
+function addItem(type, extra) {
   const c = toWorld(innerWidth / 2, innerHeight / 2);
   const x = Math.round(c.x), y = Math.round(c.y);
   const item = {
@@ -320,7 +360,10 @@ function addItem(type) {
     ellipse: { x: x - 100, y: y - 60, w: 200, h: 120 },
     arrow: { x: x - 80, y, len: 160, angle: 0 },
     paper: { x, y, title: 'Untitled', body: '' },
+    // a slight random tilt, like a photo dropped on the page
+    image: { x: x - 140, y: y - 140, w: 280, caption: '', rot: +(Math.random() * 6 - 3).toFixed(1) },
   }[type];
+  Object.assign(item, extra);
   item.id = type[0] + Date.now().toString(36);
   item.type = type;
   doc.items.push(item);
@@ -336,6 +379,18 @@ function initEditor() {
   bar.hidden = false;
   bar.querySelectorAll('[data-add]').forEach(b =>
     b.addEventListener('click', () => addItem(b.dataset.add)));
+
+  const imageFile = document.getElementById('imageFile');
+  document.getElementById('addImage').addEventListener('click', () => imageFile.click());
+  imageFile.addEventListener('change', async () => {
+    if (!imageFile.files[0]) return;
+    try {
+      addItem('image', { src: await fileToDataURL(imageFile.files[0]) });
+    } catch {
+      alert("That file couldn't be read as a picture.");
+    }
+    imageFile.value = '';
+  });
 
   const resize = factor => {
     if (!selected || selected.type !== 'text') return;

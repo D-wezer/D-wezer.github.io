@@ -205,6 +205,30 @@ html, body {
 .arrow .handle { bottom: auto; top: 1px; right: -20px; cursor: crosshair; }
 .editing .selected > .handle { display: block; }
 
+/* ---------- pictures (polaroids) ---------- */
+
+.image {
+  padding: 12px 12px 0;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .18), 0 8px 18px rgba(0, 0, 0, .16);
+}
+.image img {
+  display: block;
+  width: 100%;
+  background: #eee;
+  pointer-events: none;
+}
+.image .caption {
+  min-height: 46px;
+  padding: 8px 4px 10px;
+  font: 500 24px/1.15 "Caveat", cursive;
+  text-align: center;
+  overflow-wrap: anywhere;
+  outline: none;
+}
+.image .caption[contenteditable="true"] { cursor: text; user-select: text; -webkit-user-select: text; }
+.image .caption[contenteditable="true"]:empty::before { content: attr(data-placeholder); color: #aaa; }
+
 #toolbar {
   position: fixed;
   top: 12px;
