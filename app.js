@@ -200,7 +200,39 @@ const isTyping = () => document.activeElement && document.activeElement.isConten
 
 let gesture = null;
 
+// Two fingers on the canvas pinch-zoom it (and pan it, following the midpoint).
+const touches = new Map();   // pointerId -> last position, touch pointers only
+let pinch = null;
+
+function pinchState() {
+  const [a, b] = [...touches.values()];
+  return { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+}
+
+function liftTouch(e) {
+  touches.delete(e.pointerId);
+  if (touches.size < 2) pinch = null;
+}
+addEventListener('pointerup', liftTouch);
+addEventListener('pointercancel', liftTouch);
+
 stage.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'touch') {
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (touches.size === 2) {
+      // a second finger turns whatever the first was doing into a pinch
+      if (gesture) {
+        stage.classList.remove('panning');
+        if (gesture.el) gesture.el.classList.remove('dragging');
+        if (gesture.moved) save();
+        gesture = null;
+      }
+      if (isTyping()) document.activeElement.blur();
+      pinch = pinchState();
+      e.preventDefault();
+    }
+    if (touches.size > 1) return;
+  }
   if (e.button !== 0 || gesture) return;
   const t = e.target;
   // let editable fields, links and buttons behave normally
@@ -233,6 +265,15 @@ stage.addEventListener('pointerdown', e => {
 });
 
 stage.addEventListener('pointermove', e => {
+  if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch) {
+    const now = pinchState();
+    view.x += now.mx - pinch.mx;
+    view.y += now.my - pinch.my;
+    zoomAt(now.mx, now.my, now.d / pinch.d);
+    pinch = now;
+    return;
+  }
   const g = gesture;
   if (!g || e.pointerId !== g.id) return;
   const dx = e.clientX - g.sx, dy = e.clientY - g.sy;
@@ -467,7 +508,9 @@ function initEditor() {
 
 document.getElementById('hint').innerHTML = EDIT
   ? 'Edit mode — drag to move, click selected text again to type, drag the blue dot to resize, drag the dot above a picture to rotate it. Changes are a draft in this browser until you download content.json and publish it.'
-  : '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · <kbd>Q</kbd><kbd>E</kbd> or scroll to zoom · click a paper ball to unravel it · drag papers around';
+  : matchMedia('(pointer: coarse)').matches
+    ? 'drag to move · pinch to zoom · tap a paper ball to unravel it · drag papers around'
+    : '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · <kbd>Q</kbd><kbd>E</kbd> or scroll to zoom · click a paper ball to unravel it · drag papers around';
 
 load().then(loaded => {
   doc = loaded;
