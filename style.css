@@ -202,6 +202,15 @@ html, body {
   border: 2px solid var(--accent);
   cursor: nwse-resize;
 }
+/* handles keep the same on-screen size at any zoom (--k is set from JS), with a generous hit area */
+.handle { transform: scale(calc(1 / var(--k, 1))); }
+.handle::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+}
+.handle.rotate { transform-origin: 50% 34px; }
 .arrow .handle { bottom: auto; top: 1px; right: -20px; cursor: crosshair; }
 .handle.rotate { right: auto; bottom: auto; left: 50%; top: -34px; margin-left: -8px; cursor: grab; }
 .handle.rotate::after {

@@ -66,6 +66,7 @@ async function fileToDataURL(file, max = 1000) {
 
 function applyView() {
   world.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.k})`;
+  world.style.setProperty('--k', view.k);
   const grid = 40 * view.k;
   stage.style.backgroundSize = `${grid}px ${grid}px`;
   stage.style.backgroundPosition = `${view.x}px ${view.y}px`;
