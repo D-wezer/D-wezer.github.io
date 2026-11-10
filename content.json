@@ -1,0 +1,21 @@
+{
+  "home": { "cx": 0, "cy": 40, "k": 1 },
+  "items": [
+    { "id": "e1", "type": "ellipse", "x": -210, "y": -85, "w": 420, "h": 160 },
+    { "id": "t1", "type": "text", "x": -140, "y": -42, "size": 68, "text": "Hi, I'm Derek" },
+
+    { "id": "a1", "type": "arrow", "x": 225, "y": -5, "len": 170, "angle": 0 },
+    { "id": "t2", "type": "text", "x": 415, "y": -30, "size": 44, "text": "projects" },
+    { "id": "p1", "type": "paper", "x": 480, "y": 110, "title": "A project I built",
+      "body": "<p>This is a piece of paper. Use it for the long version: what the project was, why you built it, what went wrong, what you'd do differently.</p><p>Open the site with <b>?edit</b> to rewrite this.</p>" },
+
+    { "id": "a2", "type": "arrow", "x": -225, "y": -5, "len": 170, "angle": 3.142 },
+    { "id": "t3", "type": "text", "x": -560, "y": -30, "size": 44, "text": "about me" },
+    { "id": "p2", "type": "paper", "x": -490, "y": 110, "title": "The longer story",
+      "body": "<p>Where you're from, what you study, what you care about.</p>" },
+
+    { "id": "a3", "type": "arrow", "x": 0, "y": 90, "len": 130, "angle": 1.571 },
+    { "id": "r1", "type": "rect", "x": -130, "y": 235, "w": 260, "h": 80 },
+    { "id": "t4", "type": "text", "x": -95, "y": 252, "size": 40, "text": "say hi → email" }
+  ]
+}
